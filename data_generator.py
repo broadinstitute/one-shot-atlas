@@ -15,6 +15,7 @@ class BaseBrainDataset:
     """
         Base class for generators of brain images.
     """
+
     def __init__(self, base_folder, reshape_to=None):
         """
         Loop over base folder and create a DataFrame `df` 
@@ -36,13 +37,13 @@ class BaseBrainDataset:
         :return:
         """
         meta = {'atlas': [], 'coordinate': [], 'plane': [], 'is_mask': [],
-               'image_type': [], 'path': []}
+                'image_type': [], 'path': []}
         for current_folder, sub_folders, files in os.walk(self.base_folder):
             for file in files:
                 path = os.path.join(current_folder, file)
-                if os.path.splitext(path)[-1] not in ['.md']: # ignore markdown files
+                if os.path.splitext(path)[-1] not in ['.md']:  # ignore markdown files
                     # extract and pre-process meta
-                    path = os.path.normpath(path)  # normalize path (eg remove douple seps)
+                    path = os.path.normpath(path)  # normalize path (eg remove double seps)
                     *stuff, atlas, plane, is_mask, name = path.split(os.sep)
                     image_type = os.path.splitext(name)[-1]
                     assert plane in ['cor', 'sag', 'hor']
@@ -82,18 +83,18 @@ class DataGenerator(BaseBrainDataset, Sequence):
     """
         Data generator with augmentation for one shot atlas.
     """
-    
+
     def __init__(self, base_folder, reshape_to=(512, 512), batch_size=128):
         super().__init__(base_folder=base_folder, reshape_to=reshape_to)
         self.batch_size = batch_size
-        
+
         # fetch coronal whose posterior is multiple of 10
         mask_1 = self.df['plane'] == 'cor'
         mask_2 = self.df['atlas'] != 'brainmaps'
         mask_3 = self.df.coordinate % 10 == 0
         mask_4 = self.df.is_mask == False
         df_subset = self.df[mask_1 & mask_2 & mask_3 & mask_4].copy()
-        
+
         # Perform tensor product to get pairs
         df_subset['dummy_key'] = 1
         df_1 = df_subset.copy()
@@ -101,21 +102,22 @@ class DataGenerator(BaseBrainDataset, Sequence):
         self.df_pairs = df_1.merge(df_2, on='dummy_key')
         self.df_pairs.drop('dummy_key', axis=1, inplace=True)
         self.n_pairs = len(self.df_pairs)
-        
+
         # shuffle pairs
         self.on_epoch_end()
-        
+
     def __len__(self):
         """
             Get number of batches in an epoch (arbitrary).
         """
         return (132 ** 2) // self.batch_size
-#         return self.n_pairs // self.batch_size
-    
+
+    #         return self.n_pairs // self.batch_size
+
     def on_epoch_end(self):
         # shuffle couples
         self.df_pairs = self.df_pairs.sample(frac=1)
-    
+
     def __getitem__(self, index):
         """
             Get batch of images/labels, both float32
@@ -123,7 +125,7 @@ class DataGenerator(BaseBrainDataset, Sequence):
         """
         batch_ixs = list(range(0, self.n_pairs, self.batch_size))
         batch_ix = batch_ixs[index]
-        batch_df = self.df_pairs[batch_ix:batch_ix+self.batch_size]
+        batch_df = self.df_pairs[batch_ix:batch_ix + self.batch_size]
         assert len(batch_df) == self.batch_size
 
         # create uint8 batch and labels
@@ -138,15 +140,15 @@ class DataGenerator(BaseBrainDataset, Sequence):
             y = np.abs((posterior_1 - posterior_2) / 1320.)
             y_batch.append(y)
         y_batch = np.array(y_batch, dtype='f')
-        
-        #augment
+
+        # augment
         x_batch_u[:, 0, :, :, :] = self.augmentator(x_batch_u[:, 0, :, :, :])
         x_batch_u[:, 1, :, :, :] = self.augmentator(x_batch_u[:, 1, :, :, :])
-        
+
         # create float32 batch
         x_batch_f = x_batch_u.astype('float32') / 255.
         return x_batch_f, y_batch
-    
+
     @staticmethod
     def augmentator(images):
         """Apply data augmentation"""
@@ -176,7 +178,7 @@ class DataGenerator(BaseBrainDataset, Sequence):
             # Convert to grayscale
             iaa.Sometimes(.2, iaa.Grayscale(alpha=(0.0, 1.0))),
             iaa.Sometimes(.4, iaa.LinearContrast((0.5, 1.5), per_channel=0.5)),
-            #iaa.PiecewiseAffine(scale=(0.005, 0.05)),
+            # iaa.PiecewiseAffine(scale=(0.005, 0.05)),
         ])
         images = augmenter(images=images)
         return images

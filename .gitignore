@@ -12,9 +12,5 @@
 #!TensorBoard/*
 #!brain_images/*
 #!imgs/siamese.png
-
-# ..even if they are in sub-folders
 !Predictions.ipynb
-# # sync metadata and content
-#!tommaso/brain_library
-#!tommaso/brain_library*
+

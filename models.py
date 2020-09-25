@@ -37,12 +37,11 @@ def get_model():
     lft_encoded = fine_tune(encoder(lft_input))
     rgt_encoded = fine_tune(encoder(rgt_input))
 
-    L1_layer = Lambda(lambda xs: K.abs(xs[0] - xs[1]), name='discriminator_input')
-    L1_distance = L1_layer([lft_encoded, rgt_encoded])
+    l1_layer = Lambda(lambda xs: K.abs(xs[0] - xs[1]), name='discriminator_input')
+    l1_distance = l1_layer([lft_encoded, rgt_encoded])
 
-    output = Dense(1, activation='hard_sigmoid', name='depth_prediction')(L1_distance)
+    output = Dense(1, activation='hard_sigmoid', name='depth_prediction')(l1_distance)
     model = Model(inputs=input_pair, outputs=output, name='siamese_network')
 
     model.compile(loss='mean_squared_error', optimizer=Adam())
     return model
-
