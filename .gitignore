@@ -1,0 +1,20 @@
+# Ignore everything
+*
+
+# Except the following files:
+!*.gitignore
+!*.md
+!coronal_depth_matching.h5
+!data_generator.py
+!main.py
+!utils.py
+#!checkpoints/*
+#!TensorBoard/*
+#!brain_images/*
+#!imgs/siamese.png
+
+# ..even if they are in sub-folders
+!Predictions.ipynb
+# # sync metadata and content
+#!tommaso/brain_library
+#!tommaso/brain_library*
